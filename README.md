@@ -1,7 +1,5 @@
 # AC_SmartSensor
-<p align="center">
 ![Sensor](https://github.com/rfpanizzon/AC_SmartSensor/blob/main/img/smart_sensor.png)
-</p>
 
 + ## Características que o sensor terá:
 
@@ -21,9 +19,7 @@
 * Estou utilizando arduino por enquanto
 * 0 a 1V (esperar confirmação do prof Rebonatto com o prof Spaldin)
 * Recomendado pelo prof Spaldin:
-  ** esp 32 12e
-  ** pilha 2032
+   ** esp 32 12e
+   ** pilha 2032
   
-<p align="center">
 ![Sensor](https://github.com/rfpanizzon/AC_SmartSensor/blob/main/img/modelo_smart_sensor.png)
-</p>
