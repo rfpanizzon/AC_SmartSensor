@@ -19,6 +19,7 @@
   + Auto-identificação: Se sobrar tempo dá pra implementar a auto-identificação através da lib WiFiManager na esp 32 12e. A lib WiFiManager, serve para facilitar o gerenciamento de conexões wireless.
 
 
+
 ### ANOTAÇÕES:
 * Estou utilizando arduino por enquanto
 * 0 a 1V (esperar confirmação do prof Rebonatto com o prof Spaldin)
