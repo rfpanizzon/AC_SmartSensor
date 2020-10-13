@@ -14,6 +14,7 @@
 #define TOVOLTAGE 5 / 1023.0        // Para o Arduino, o final de escala padrao eh 5,0V e o conversor eh de 10 bits
 #define SERIAL_BAUDRATE 9600        // esta eh a taxa de transmissao de dados usual para Arduino
 #endif
+#include <arduinoFFT.h>
 #define AMOSTRAS 64                 // eh possivel varias este numero de amostras (N). Para Arduino UNO, o maximo eh 147
                                     // quando selecionar o numero de amostras, cuide para a variavel DELAY deve se manter positiva 
 #define FREQUENCIA 60               // Normalmente, eh 60 ou 50 Hz
@@ -21,10 +22,14 @@
 #define PIN_A A5                    // Pino do conversor analogico/digital escolhido para medir a corrente. Pode ser modificado
 #define PRINT_VETOR 0               // "0"(zero) mostra o valor eficaz na serial e "1" mostra os dados na serial e a forma de onda na plotter
 
+arduinoFFT FFT = arduinoFFT();
 float corrente[AMOSTRAS];           // vetor com os dados instantaneos (N AMOSTRAS)da forma de onda da corrente
 float DELAY;                        // DELAY necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
 float TEMPO_CONVERSAO_N_AMOSTRAS;   
 float PERIODO = (1.0/FREQUENCIA);
+
+double correnteReal[AMOSTRAS];
+double correnteImag[AMOSTRAS];
 
 // vetores com tamanho 10, para guardar os dados de 10 ciclos
 float VALORES_CORRENTE_RMS[10];
@@ -58,7 +63,8 @@ void loop()
   //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
   for (int i = 0; i < AMOSTRAS; i++)
   {
-    corrente[i] = analogRead(PIN_A);
+    correnteReal[i] = corrente[i] = analogRead(PIN_A);
+    correnteImag[i] = 0;
     delayMicroseconds(DELAY);
   }
   //FIM DA AQUISIÇÃO
@@ -100,15 +106,17 @@ void loop()
   
   // aplicar o ganho para obter o valor correto e calibrado da corrente eletrica. 
   // O valor do ganho esta impresso na etiqueta do sensor de corrente Elotod
- 
-  //Serial.print("\tCorrente Eficaz: ");
-  //Serial.print(rms_corrente * GANHO_SENSOR_CORRENTE, 3);
-  //Serial.println(" (Arms)");
-
   // variável VALORES_CORRENTE_RMS para salvar 10 ciclos do valor da corrente eficaz (RMS)
   VALORES_MEDIA_ARITMETICA[cont_valores] = media_aritmetica_corrente;
   VALORES_CORRENTE_RMS[cont_valores] = rms_corrente * GANHO_SENSOR_CORRENTE;
   cont_valores++;
+
+  /*FFT*/
+  FFT.Windowing(correnteReal, AMOSTRAS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+  FFT.Compute(correnteReal, correnteImag, AMOSTRAS, FFT_FORWARD);
+  FFT.ComplexToMagnitude(correnteReal, correnteImag, AMOSTRAS);
+  double peak = FFT.MajorPeak(correnteReal, AMOSTRAS, SAMPLING_FREQUENCY);
+
   
   // laço for para printar os valores dos 10 ciclos
   if(cont_valores == 9)
