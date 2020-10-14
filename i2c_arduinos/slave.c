@@ -14,9 +14,7 @@
 #define TOVOLTAGE 5 / 1023.0        // Para o Arduino, o final de escala padrao eh 5,0V e o conversor eh de 10 bits
 #define SERIAL_BAUDRATE 9600        // esta eh a taxa de transmissao de dados usual para Arduino
 #endif
-
-#include <arduinoFFT.h>             // Biblioteca para fazer a fft 
-
+#include <arduinoFFT.h>
 #define AMOSTRAS 64                 // eh possivel varias este numero de amostras (N). Para Arduino UNO, o maximo eh 147
                                     // quando selecionar o numero de amostras, cuide para a variavel DELAY deve se manter positiva 
 #define FREQUENCIA 60               // Normalmente, eh 60 ou 50 Hz
@@ -24,21 +22,28 @@
 #define PIN_A A5                    // Pino do conversor analogico/digital escolhido para medir a corrente. Pode ser modificado
 #define PRINT_VETOR 0               // "0"(zero) mostra o valor eficaz na serial e "1" mostra os dados na serial e a forma de onda na plotter
 
+arduinoFFT FFT = arduinoFFT();
 float corrente[AMOSTRAS];           // vetor com os dados instantaneos (N AMOSTRAS)da forma de onda da corrente
-float corrente_real[AMOSTRAS];      // vetor para salvar dados "brutos" do sensor e fazer a fft
-float corrente_img[AMOSTRAS];       // vetor para aux na fft
 float DELAY;                        // DELAY necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
 float TEMPO_CONVERSAO_N_AMOSTRAS;   
 float PERIODO = (1.0/FREQUENCIA);
 
+double correnteReal[AMOSTRAS];
+double correnteImag[AMOSTRAS];
+
 // vetores com tamanho 10, para guardar os dados de 10 ciclos
 float VALORES_CORRENTE_RMS[10];
 float VALORES_MEDIA_ARITMETICA[10];
-float VALORES_PICO_FFT[10];
 int cont_valores = 0;
 
-void setup()
-{
+#include <Wire.h>
+
+char t[10]; //empty array where to put the data going to the master
+int sendData[12]={245,255,265,275,285,295,305,315,325,335,345,355}; //Store random data to send to Master
+
+volatile int Adress = 10; // variable used by the master to sent data to the slave
+
+void setup() {
   pinMode(PIN_A, INPUT);
   Serial.begin(SERIAL_BAUDRATE);
   Serial.println("Serial initt...");
@@ -55,17 +60,29 @@ void setup()
   TEMPO_CONVERSAO_N_AMOSTRAS = micros() - TEMPO_CONVERSAO_N_AMOSTRAS;
   // O Arduino converte N amostras em um determinado tempo (milisegundos). Eh preciso fazer um DELAY para ter um N AMOSTRAS em um ciclo completo
   DELAY = (((1000000*PERIODO) - TEMPO_CONVERSAO_N_AMOSTRAS) / AMOSTRAS);    // 1000000 eh para passar o PERIODO para microsegundos
- // Observe que DELAY esta em microsegundos e que vc precisa cuidar para fazer N AMOSTRAS EM UM CICLO DE 60 OU 50Hz
- // DELAY nao pode ser negativo
- Serial.print("\tDELAY NAO PODE SER NEGATIVO =  ");Serial.print(DELAY, 4);Serial.println("  microsegundos");
+  // Observe que DELAY esta em microsegundos e que vc precisa cuidar para fazer N AMOSTRAS EM UM CICLO DE 60 OU 50Hz
+  // DELAY nao pode ser negativo
+  Serial.print("\tDELAY NAO PODE SER NEGATIVO =  ");Serial.print(DELAY, 4);Serial.println("  microsegundos");
+
+  Wire.begin(8);                //slave address
+  Wire.onRequest(requestEvent); //Create an Interrup when Master request data
+  Wire.onReceive(receiveEvent); //Create an Interrup when receiving data from the Master 
 }
-void loop()
-{
+
+void loop() {
+  delay(500);
+}
+
+void receiveEvent(){
+    Adress = Wire.read();    //Read the data requested by the Master
+}
+
+void requestEvent() {
   //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
   for (int i = 0; i < AMOSTRAS; i++)
   {
-    corrente_real[i] = corrente[i] = analogRead(PIN_A);
-    corrente_img[i] = 0;
+    correnteReal[i] = corrente[i] = analogRead(PIN_A);
+    correnteImag[i] = 0;
     delayMicroseconds(DELAY);
   }
   //FIM DA AQUISIÇÃO
@@ -104,45 +121,27 @@ void loop()
   }
   float rms_corrente = sqrt(soma_quadrados_corrente / AMOSTRAS) * TOVOLTAGE; // ajuste para ficar na escala de (0 a 5.0 ou a 3.3)Volts
   // FIM CÁLCULO VALOR RMS
-
-  /*FFT*/
-  FFT.Windowing(corrente_real, AMOSTRAS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-  FFT.Compute(corrente_real, corrente_img, AMOSTRAS, FFT_FORWARD);
-  FFT.ComplexToMagnitude(corrente_real, corrente_img, AMOSTRAS);
-  double peak = FFT.MajorPeak(corrente_real, AMOSTRAS, FREQUENCIA);
-
+  
+  // aplicar o ganho para obter o valor correto e calibrado da corrente eletrica. 
+  // O valor do ganho esta impresso na etiqueta do sensor de corrente Elotod
   // variável VALORES_CORRENTE_RMS para salvar 10 ciclos do valor da corrente eficaz (RMS)
   VALORES_MEDIA_ARITMETICA[cont_valores] = media_aritmetica_corrente;
 
-  // aplicar o ganho para obter o valor correto e calibrado da corrente eletrica. 
-  // O valor do ganho esta impresso na etiqueta do sensor de corrente Elotod
-  VALORES_CORRENTE_RMS[cont_valores] = rms_corrente * GANHO_SENSOR_CORRENTE;
-
-  // salvar o a frequencia mais dominante em cada ciclo
-  VALORES_PICO_FFT[cont_valores] = peak;
-  cont_valores++;
-
-  // laço for para printar os resultados depois de 10 ciclos
+  // laço for para printar os valores dos 10 ciclos
   if(cont_valores == 9)
   {
+    Serial.print("\tValor medio 10 ciclos: ");
     for (int i = 0; i < 10; i++)
     {
-        Serial.print("\tValor medio: ");
-        Serial.print(VALORES_MEDIA_ARITMETICA[i], 3);
-
-        Serial.print("\tCorrente Eficaz: ");
-        Serial.print(VALORES_CORRENTE_RMS[i], 3);
-        Serial.println(" (Arms)");
-
-        Serial.print("\tFrequencia dominante: ");
-        Serial.print(VALORES_PICO_FFT[i], 3);
-
+      Serial.print(VALORES_MEDIA_ARITMETICA[i], 3);
+      Serial.print(" | ");
     }
-    cont_valores = 0;
+    
+    //dtostrf(VALORES_MEDIA_ARITMETICA[Adress], 3, 0, t);   //Convert the Data requested to ASII String   dtostrf(floatVar or intVar, minStringWidthIncDecimalPoint, numVarsAfterDecimal, empty array)         
+    dtostrf(VALORES_MEDIA_ARITMETICA[Adress], 3, 3, t);   //Convert the Data requested to ASII String   dtostrf(floatVar or intVar, minStringWidthIncDecimalPoint, numVarsAfterDecimal, empty array)         
+    Wire.write(t);         //Send ASII String
 
-    // rodar o cod com 10 cliclos apenas 1x
-    while(1);
+    cont_valores = 0;
   }
 
-  delay(1000);
 }
