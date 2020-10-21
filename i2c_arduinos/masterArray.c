@@ -1,3 +1,5 @@
+//https://www.clubedohardware.com.br/topic/1229055-enviar-e-receber-um-float-por-i2c-para-outro-arduino/
+
 #include <Wire.h>
 
 #define sizeArray = 3;
