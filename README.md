@@ -1,7 +1,7 @@
 # AC_SmartSensor
 ![Sensor](https://github.com/rfpanizzon/AC_SmartSensor/blob/main/img/smart_sensor.png)
 
-+ ## Características que o sensor terá:
++ ## Características do sensor:
 
   + Condicionamento do sinal:  A tensão de saída está referência a tensão de alimentação do sensor, se for 5V excursiona a saída de 0 a 5V se for 3,3 de 0 a 3,3V. Já conta com um filtro analógico de passa baixa de primeira ordem do tipo RC (Resistor Capacitor), com a finalidade de atenuar ruídos e atuar como filtro anti-aliasing;
   
