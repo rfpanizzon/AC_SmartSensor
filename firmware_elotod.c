@@ -1,4 +1,3 @@
-// Editado por Rafael Panizzon em 07Out2020: Captura de 10 ciclos de 60hz mostrando os valores medio e rms
 // Editado por prof. Spalding em 09Set2020:
 // Para usar com Arduino UNO, ESP32 e outros: Programa adaptado por Carlos Re Signor em Setembro de 2018 para capturar as formas
 // de onda do sensor de corrente Elotod.
@@ -14,27 +13,18 @@
 #define TOVOLTAGE 5 / 1023.0        // Para o Arduino, o final de escala padrao eh 5,0V e o conversor eh de 10 bits
 #define SERIAL_BAUDRATE 9600        // esta eh a taxa de transmissao de dados usual para Arduino
 #endif
-#include <arduinoFFT.h>
 #define AMOSTRAS 64                 // eh possivel varias este numero de amostras (N). Para Arduino UNO, o maximo eh 147
-                                    // quando selecionar o numero de amostras, cuide para a variavel DELAY deve se manter positiva 
+                                     // quando selecionar o numero de amostras, cuide para a variavel DELAY deve se manter positiva 
 #define FREQUENCIA 60               // Normalmente, eh 60 ou 50 Hz
 #define GANHO_SENSOR_CORRENTE 0.57  // este 0.57 é o valor de calibracao impresso na etiqueta do sensor Elotod. No caso um sensor para 0.8 Apico
-#define PIN_A A5                    // Pino do conversor analogico/digital escolhido para medir a corrente. Pode ser modificado
+#define PIN_A A0                    // Pino do conversor analogico/digital escolhido para medir a corrente. Pode ser modificado
 #define PRINT_VETOR 0               // "0"(zero) mostra o valor eficaz na serial e "1" mostra os dados na serial e a forma de onda na plotter
 
-arduinoFFT FFT = arduinoFFT();
 float corrente[AMOSTRAS];           // vetor com os dados instantaneos (N AMOSTRAS)da forma de onda da corrente
 float DELAY;                        // DELAY necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
 float TEMPO_CONVERSAO_N_AMOSTRAS;   
 float PERIODO = (1.0/FREQUENCIA);
 
-double correnteReal[AMOSTRAS];
-double correnteImag[AMOSTRAS];
-
-// vetores com tamanho 10, para guardar os dados de 10 ciclos
-float VALORES_CORRENTE_RMS[10];
-float VALORES_MEDIA_ARITMETICA[10];
-int cont_valores = 0;
 
 void setup()
 {
@@ -63,8 +53,7 @@ void loop()
   //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
   for (int i = 0; i < AMOSTRAS; i++)
   {
-    correnteReal[i] = corrente[i] = analogRead(PIN_A);
-    correnteImag[i] = 0;
+    corrente[i] = analogRead(PIN_A);
     delayMicroseconds(DELAY);
   }
   //FIM DA AQUISIÇÃO
@@ -101,44 +90,14 @@ void loop()
   {
     soma_quadrados_corrente += corrente[i] * corrente[i];
   }
-  float rms_corrente = sqrt(soma_quadrados_corrente / AMOSTRAS) * TOVOLTAGE; // ajuste para ficar na escala de (0 a 5.0 ou a 3.3)Volts
+  float rms_corrente = sqrt(soma_quadrados_corrente / AMOSTRAS) * TOVOLTAGE;     // ajuste para ficar na escala de (0 a 5.0 ou a 3.3)Volts
   // FIM CÁLCULO VALOR RMS
   
   // aplicar o ganho para obter o valor correto e calibrado da corrente eletrica. 
   // O valor do ganho esta impresso na etiqueta do sensor de corrente Elotod
-  // variável VALORES_CORRENTE_RMS para salvar 10 ciclos do valor da corrente eficaz (RMS)
-  VALORES_MEDIA_ARITMETICA[cont_valores] = media_aritmetica_corrente;
-  VALORES_CORRENTE_RMS[cont_valores] = rms_corrente * GANHO_SENSOR_CORRENTE;
-  cont_valores++;
-
-  /*FFT*/
-  FFT.Windowing(correnteReal, AMOSTRAS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-  FFT.Compute(correnteReal, correnteImag, AMOSTRAS, FFT_FORWARD);
-  FFT.ComplexToMagnitude(correnteReal, correnteImag, AMOSTRAS);
-  double peak = FFT.MajorPeak(correnteReal, AMOSTRAS, SAMPLING_FREQUENCY);
-
-  
-  // laço for para printar os valores dos 10 ciclos
-  if(cont_valores == 9)
-  {
-    Serial.print("\tValor medio 10 ciclos: ");
-    for (int i = 0; i < 10; i++)
-    {
-      Serial.print(VALORES_MEDIA_ARITMETICA[i], 3);
-      Serial.print(" | ");
-    }
-
-    Serial.print("\tCorrente Eficaz 10 ciclos: ");
-    for (int i = 0; i < 10; i++)
-    {
-      Serial.print(VALORES_CORRENTE_RMS[i], 3);
-      Serial.print(" (Arms) | ");
-    }
-    cont_valores = 0;
-
-    // soh pra ver se funcionou deixar travado pra ver os valores no monitor serial
-    while (1);
-  }
-
+ 
+  Serial.print("\tCorrente Eficaz: ");
+  Serial.print(rms_corrente * GANHO_SENSOR_CORRENTE, 3);
+  Serial.println(" (Arms)");
   delay(1000);
 }
