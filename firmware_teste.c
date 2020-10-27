@@ -11,16 +11,18 @@ float corrente[AMOSTRAS];           // vetor com os dados instantaneos (N AMOSTR
 float DELAY;                        // DELAY necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
 float TEMPO_CONVERSAO_N_AMOSTRAS;   
 float PERIODO = (1.0/FREQUENCIA);
+String readString;
+
 
 void setup()
 {
   pinMode(PIN_A, INPUT);
   Serial.begin(SERIAL_BAUDRATE);
-  Serial.println("Serial initt...");
-  Serial.println("Set: ");
-  Serial.print("\tN AMOSTRAS: "); Serial.println(AMOSTRAS);
-  Serial.print("\tFrequencia do Sinal: "); Serial.print(FREQUENCIA); Serial.println(" Hz");
-  Serial.print("\tPeriodo do Sinal: "); Serial.print(PERIODO,4);Serial.println(" segundos");
+  //Serial.println("Serial initt...");
+  //Serial.println("Set: ");
+  //Serial.print("\tN AMOSTRAS: "); Serial.println(AMOSTRAS);
+  //Serial.print("\tFrequencia do Sinal: "); Serial.print(FREQUENCIA); Serial.println(" Hz");
+  //Serial.print("\tPeriodo do Sinal: "); Serial.print(PERIODO,4);Serial.println(" segundos");
   
   TEMPO_CONVERSAO_N_AMOSTRAS = micros();
   for (int i = 0; i < AMOSTRAS; i++) //primeira conversao para calibração do AD e obter o tempo necessário para converter N AMOSTRAS
@@ -32,23 +34,77 @@ void setup()
   DELAY = (((1000000*PERIODO) - TEMPO_CONVERSAO_N_AMOSTRAS) / AMOSTRAS);    // 1000000 eh para passar o PERIODO para microsegundos
   // Observe que DELAY esta em microsegundos e que vc precisa cuidar para fazer N AMOSTRAS EM UM CICLO DE 60 OU 50Hz
   // DELAY nao pode ser negativo
-  Serial.print("\tDELAY NAO PODE SER NEGATIVO =  ");Serial.print(DELAY, 4);Serial.println("  microsegundos");
+  //Serial.print("\tDELAY NAO PODE SER NEGATIVO =  ");Serial.print(DELAY, 4);Serial.println("  microsegundos para 64 amostras");
 }
 
 void loop()
 {
-  //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
-  for (int i = 0; i < AMOSTRAS; i++)
+  while (Serial.available()) // this will be skipped if no data present, leading to
+                             // the code sitting in the delay function below
   {
-    corrente[i] = analogRead(PIN_A);
-    delayMicroseconds(DELAY);
+    delay(30);  //delay to allow buffer to fill 
+    if (Serial.available() >0)
+    {
+      char c = Serial.read();  //gets one byte from serial buffer
+      readString += c; //makes the string readString
+    }
   }
-  //FIM DA AQUISIÇÃO
-
-  for (int i = 0; i < AMOSTRAS; i++)
+  if (readString == "1")
   {
-    Serial.println(corrente[i]);
-    Serial.print(" ");
+    for(int j = 0; j < 10; j++)
+      {
+        //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+          corrente[i] = analogRead(PIN_A);
+          delayMicroseconds(DELAY);
+        }
+        //FIM DA AQUISIÇÃO
+      
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+          Serial.println(corrente[i]);
+          //Serial.print(" ");
+        }
+      }
+    readString = "0";
   }
-  while (1);               // voce pode eliminar esta linha ou comentar para que a visualização da forma de onda seja constante                       
+  if (readString == "2")
+  {
+    for(int j = 0; j < 10; j++)
+      {
+        //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+          corrente[i] = analogRead(PIN_A);
+          delayMicroseconds(DELAY);
+        }
+        //FIM DA AQUISIÇÃO
+        float media_aritmetica_corrente = 0;
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+          media_aritmetica_corrente += corrente[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + corrente[i];
+        }
+        media_aritmetica_corrente /= AMOSTRAS;
+        //FIM CÁLCULO MÉDIA ARITMÉTICA
+        //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+          corrente[i] -= media_aritmetica_corrente;
+        }
+        //FIM REMOÇÃO DO NIVEL DC DA FORMA DE ONDA
+        
+        //CALULO DO VALOR EFICAZ CORRENTE(RMS)
+        //valor_eficaz = sqrt(sum(amostra[i]^2) / numero de amostras)
+        float soma_quadrados_corrente = 0;
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+          soma_quadrados_corrente += corrente[i] * corrente[i];
+        }
+        float rms_corrente = sqrt(soma_quadrados_corrente / AMOSTRAS) * TOVOLTAGE;     // ajuste para ficar na escala de (0 a 5.0 ou a 3.3)Volts
+        Serial.println(rms_corrente * GANHO_SENSOR_CORRENTE, 3);
+      }
+    readString = "0";
+    
+  }
 }
