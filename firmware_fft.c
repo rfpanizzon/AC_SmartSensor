@@ -7,12 +7,17 @@
 #define PIN_A A0                    // Pino do conversor analogico/digital escolhido para medir a corrente. Pode ser modificado
 #define PRINT_VETOR 0               // "0"(zero) mostra o valor eficaz na serial e "1" mostra os dados na serial e a forma de onda na plotter
 
+
 float corrente[AMOSTRAS];           // vetor com os dados instantaneos (N AMOSTRAS)da forma de onda da corrente
 float DELAY;                        // DELAY necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
 float TEMPO_CONVERSAO_N_AMOSTRAS;   
 float PERIODO = (1.0/FREQUENCIA);
 String readString;
 
+#include <arduinoFFT.h>
+arduinoFFT FFT = arduinoFFT();
+double vReal[AMOSTRAS];
+double vImag[AMOSTRAS];
 
 void setup()
 {
@@ -49,73 +54,55 @@ void loop()
       readString += c; //makes the string readString
     }
   }
-  if (readString == "1")
-  {
-    for(int j = 0; j < 10; j++)
-      {
-        //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
-        for (int i = 0; i < AMOSTRAS; i++)
-        {
-          corrente[i] = analogRead(PIN_A);
-          delayMicroseconds(DELAY);
-        }
-        //FIM DA AQUISIÇÃO
-      
-        for (int i = 0; i < AMOSTRAS; i++)
-        {
-          Serial.println(corrente[i]);
-          //Serial.print(" ");
-        }
-      }
-    readString = "0";
   }
-  if (readString == "2")
+  if (readString == "3")
   {
     for(int j = 0; j < 10; j++)
-      {
+    {
         //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
         for (int i = 0; i < AMOSTRAS; i++)
         {
-          corrente[i] = analogRead(PIN_A);
-          delayMicroseconds(DELAY);
+        vReal[i] = analogRead(PIN_A);
+        vImag[i] = 0;
+        delayMicroseconds(DELAY);
         }
         //FIM DA AQUISIÇÃO
+
         float media_aritmetica_corrente = 0;
         for (int i = 0; i < AMOSTRAS; i++)
         {
-          media_aritmetica_corrente += corrente[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + corrente[i];
+            media_aritmetica_corrente += vReal[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + vReal[i];
         }
         media_aritmetica_corrente /= AMOSTRAS;
         //FIM CÁLCULO MÉDIA ARITMÉTICA
         //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
         for (int i = 0; i < AMOSTRAS; i++)
         {
-          corrente[i] -= media_aritmetica_corrente;
+            vReal[i] -= media_aritmetica_corrente;
         }
         //FIM REMOÇÃO DO NIVEL DC DA FORMA DE ONDA
+
+        /*FFT*/
+        FFT.Windowing(vReal, AMOSTRAS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+        FFT.Compute(vReal, vImag, AMOSTRAS, FFT_FORWARD);
+        FFT.ComplexToMagnitude(vReal, vImag, AMOSTRAS);
+        double peak = FFT.MajorPeak(vReal, AMOSTRAS, FREQUENCIA);
         
-        //CALULO DO VALOR EFICAZ CORRENTE(RMS)
-        //valor_eficaz = sqrt(sum(amostra[i]^2) / numero de amostras)
-        float soma_quadrados_corrente = 0;
-        for (int i = 0; i < AMOSTRAS; i++)
+        /*PRINT RESULTS*/
+        //Serial.println(peak);     //Print out what frequency is the most dominant.
+
+        for(int i=0; i<(AMOSTRAS/2); i++)
         {
-          soma_quadrados_corrente += corrente[i] * corrente[i];
+            /*View all these three lines in serial terminal to see which frequencies has which amplitudes*/
+            
+            //EIXO X DO GRAF PARA O PYTHON
+            Serial.println((i * 1.0 * AMOSTRAS/2));
+            //Serial.print(" ");
+            Serial.println(vReal[i]);    //View only this line in serial plotter to visualize the bins
         }
-        float rms_corrente = sqrt(soma_quadrados_corrente / AMOSTRAS) * TOVOLTAGE;     // ajuste para ficar na escala de (0 a 5.0 ou a 3.3)Volts
-        Serial.println(rms_corrente * GANHO_SENSOR_CORRENTE, 3);
-      }
-    readString = "0";
-    
-  }
-  if (readString == "3")
-  {
-    //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
-    for (int i = 0; i < AMOSTRAS; i++)
-    {
-      corrente[i] = analogRead(PIN_A);
-      delayMicroseconds(DELAY);
+
+        //delay(1000);  //Repeat the process every second OR:
     }
-    //FIM DA AQUISIÇÃO
-    
+    readString = "0";
   }
 }
