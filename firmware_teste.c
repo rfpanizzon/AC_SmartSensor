@@ -13,6 +13,10 @@ float TEMPO_CONVERSAO_N_AMOSTRAS;
 float PERIODO = (1.0/FREQUENCIA);
 String readString;
 
+#include <arduinoFFT.h>
+arduinoFFT FFT = arduinoFFT();
+double vReal[AMOSTRAS];
+double vImag[AMOSTRAS];
 
 void setup()
 {
@@ -109,13 +113,52 @@ void loop()
   }
   if (readString == "3")
   {
-    //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
-    for (int i = 0; i < AMOSTRAS; i++)
+    for(int j = 0; j < 10; j++)
     {
-      corrente[i] = analogRead(PIN_A);
-      delayMicroseconds(DELAY);
+        //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+        vReal[i] = analogRead(PIN_A);
+        vImag[i] = 0;
+        delayMicroseconds(DELAY);
+        }
+        //FIM DA AQUISIÇÃO
+
+        float media_aritmetica_corrente = 0;
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+            media_aritmetica_corrente += vReal[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + vReal[i];
+        }
+        media_aritmetica_corrente /= AMOSTRAS;
+        //FIM CÁLCULO MÉDIA ARITMÉTICA
+        //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
+        for (int i = 0; i < AMOSTRAS; i++)
+        {
+            vReal[i] -= media_aritmetica_corrente;
+        }
+        //FIM REMOÇÃO DO NIVEL DC DA FORMA DE ONDA
+
+        /*FFT*/
+        FFT.Windowing(vReal, AMOSTRAS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+        FFT.Compute(vReal, vImag, AMOSTRAS, FFT_FORWARD);
+        FFT.ComplexToMagnitude(vReal, vImag, AMOSTRAS);
+        double peak = FFT.MajorPeak(vReal, AMOSTRAS, FREQUENCIA);
+        
+        /*PRINT RESULTS*/
+        //Serial.println(peak);     //Print out what frequency is the most dominant.
+
+        for(int i=0; i<(AMOSTRAS/2); i++)
+        {
+            /*View all these three lines in serial terminal to see which frequencies has which amplitudes*/
+            
+            //EIXO X DO GRAF PARA O PYTHON
+            Serial.println((i * 1.0 * AMOSTRAS/2));
+            //Serial.print(" ");
+            Serial.println(vReal[i]);    //View only this line in serial plotter to visualize the bins
+        }
+
+        //delay(1000);  //Repeat the process every second OR:
     }
-    //FIM DA AQUISIÇÃO
-    
+    readString = "0";
   }
 }

@@ -65,10 +65,10 @@ if (num == "2"):
     num = round(media, 4)
     print ("\nMedia aritimetica: ", num)
 
-if (num == "3")
+if (num == "3"):
     AMOSTRAS = 640 #10 CICLOS DE 64
     dado = [ ]
-    dadofreq [ ]
+    dadofreq = [ ]
     dadox = [ ]
 
     ARDUINO.write(num.encode())
@@ -76,16 +76,15 @@ if (num == "3")
 
     for i in range (0, AMOSTRAS):
         VALOR_SERIAL = ARDUINO.readline()
-        #print (VALOR_SERIAL)
+        print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
     ARDUINO.close()
-
-    for i in range (0, AMOSTRAS, 2):
+    for i in range (0, 32):
         dadox[i] = float(dado[i])
     print (dadox)
 
-    for i in range (1, AMOSTRAS, 2):
+    for i in range (32, AMOSTRAS):
         dadofreq[i] = float(dado[i])
     print (dadofreq)
 
