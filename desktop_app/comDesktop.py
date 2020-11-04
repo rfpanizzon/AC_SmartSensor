@@ -32,6 +32,14 @@ if (num == "1"):
     dt = T/n # intervalo entre cada medida
     t = dt*arange(0, n) # gera vetor com os instantes de tempo
 
+    #teste para ver se ta salvando o arq
+    ARQUIVO = open('dado.csv', "wb")
+    writer = csv.writer(ARQUIVO, delimiter='\t', quotechar='"',
+    quoting=csv.QUOTE_ALL)
+    for i in range (0, AMOSTRAS):
+        writer.writerow([dado[i]])
+    ARQUIVO.close()
+
     # Tracado de graficos
     # Forma de onda
     plt.subplot(2, 1, 1)
@@ -66,11 +74,9 @@ if (num == "2"):
     print ("\nMedia aritimetica: ", num)
 
 if (num == "3"):
-    AMOSTRAS = 640 #10 CICLOS DE 64
+    AMOSTRAS = 8 #ateh a 8 armonica
     dado = [ ]
-    dadofreq = [ ]
-    dadox = [ ]
-
+    armonicas = [60, 120, 180, 240, 300, 360, 420, 540]
     ARDUINO.write(num.encode())
     time.sleep(2) # I shortened this to match the new value in your Arduino code
 
@@ -80,13 +86,11 @@ if (num == "3"):
         dado.append(VALOR_SERIAL)
 
     ARDUINO.close()
-    for i in range (0, 32):
-        dadox[i] = float(dado[i])
-    print (dadox)
+
 
     for i in range (32, AMOSTRAS):
-        dadofreq[i] = float(dado[i])
-    print (dadofreq)
+        dado[i] = float(dado[i])
+    print (dado)
 
     # Tracado de graficos
 
@@ -94,7 +98,7 @@ if (num == "3"):
     plt.subplot(2, 1, 2)
     plt.xlim(0, 1200) # mostra as harmonicas de 0 a 1200Hz
     plt.ylim(0, 50) # define limites eixo y (amplitudes)
-    plt.bar(dadox, abs(dadofreq), width=2, align='center', alpha=0.4, color='b', label='Frequencia')
+    plt.bar(armonicas, abs(dado), width=2, align='center', alpha=0.4, color='b', label='Frequencia')
     plt.xlabel('freq (Hz)')
     plt.ylabel('|A(freq)|')
     plt.show()
