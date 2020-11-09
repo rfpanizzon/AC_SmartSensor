@@ -2,31 +2,31 @@ import serial, csv, time
 from numpy import arange, fft, angle
 import matplotlib.pyplot as plt
 
-ARDUINO = serial.Serial("COM6", baudrate=9600)
-time.sleep(2) # wait for Arduino
+ESP_32 = serial.Serial("COM10", baudrate=115200)
+time.sleep(2) # wait for ESP_32
 
 num = input("Digite o numero:\n 1. Forma de Onda \n 2. Valor RMS da corrente\n 3. FFT\n ")
-print("\n\n")
+print("\n")
 if (num == "1"):
-    AMOSTRAS = 320 #5 CICLOS DE 64
+    AMOSTRAS = 640 #5 CICLOS DE 64
     dado = [ ]
 
-    ARDUINO.write(num.encode())
-    time.sleep(2) # I shortened this to match the new value in your Arduino code
+    ESP_32.write(num.encode())
+    time.sleep(2) # I shortened this to match the new value in your ESP_32 code
 
     for i in range (0, AMOSTRAS):
-        VALOR_SERIAL = ARDUINO.readline()
+        VALOR_SERIAL = ESP_32.readline()
         #print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
-    ARDUINO.close()
+    ESP_32.close()
 
     for i in range (0, AMOSTRAS):
         dado[i] = float(dado[i])
-    print (dado)
+    #print (dado)
 
     # Definicao de parametros
-    n_ondas = 5 # escolhe o num. de ondas capturadas
+    n_ondas = 10 # escolhe o num. de ondas capturadas
     n = n_ondas*64 # sao 64 dados capturados para cada onda
     T = n_ondas*1.0/60 # perıodo em funcao do num. de ondas
     dt = T/n # intervalo entre cada medida
@@ -35,7 +35,7 @@ if (num == "1"):
     # Tracado de graficos
     # Forma de onda
     plt.xlim(0.001, T) # define limites do eixo x
-    plt.ylim(-0.8, 0.8) # define limites do eixo y
+    plt.ylim(-0.9, 0.9) # define limites do eixo y
     plt.plot(t, dado, 'k-')
     plt.xlabel('T e m p o (s)')
     plt.ylabel('C O R R E N T E (A)')
@@ -43,18 +43,18 @@ if (num == "1"):
     plt.show()
 
 if (num == "2"):
-    RMS_CICLOS = 5 #RECEBENDO O VALOR RMS DE CADA CICLO
+    RMS_CICLOS = 10 #RECEBENDO O VALOR RMS DE CADA CICLO
     dado = [ ]
 
-    ARDUINO.write(num.encode())
-    time.sleep(2) # I shortened this to match the new value in your Arduino code
+    ESP_32.write(num.encode())
+    time.sleep(2) # I shortened this to match the new value in your ESP_32 code
 
     for i in range (0, RMS_CICLOS):
-        VALOR_SERIAL = ARDUINO.readline()
+        VALOR_SERIAL = ESP_32.readline()
         #print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
-    ARDUINO.close()
+    ESP_32.close()
 
     for i in range (0, RMS_CICLOS):
         dado[i] = float(dado[i])
@@ -67,17 +67,16 @@ if (num == "2"):
 if (num == "3"):
     AMOSTRAS = 8 #ateh a 8 armonica
     dado = [ ]
-    fft = [ ]
     armonicas = [60, 120, 180, 240, 300, 360, 420, 540]
-    ARDUINO.write(num.encode())
-    time.sleep(2) # I shortened this to match the new value in your Arduino code
+    ESP_32.write(num.encode())
+    time.sleep(2) # I shortened this to match the new value in your ESP_32 code
 
     for i in range (0, AMOSTRAS):
-        VALOR_SERIAL = ARDUINO.readline()
+        VALOR_SERIAL = ESP_32.readline()
         #print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
-    ARDUINO.close()
+    ESP_32.close()
 
     for i in range (0, 8):
         dado[i] = float(dado[i])

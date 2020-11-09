@@ -7,7 +7,6 @@
 #define FREQUENCIA 60               // Normalmente, eh 60 ou 50 Hz
 #define GANHO_SENSOR_CORRENTE 0.57  // este 0.57 é o valor de calibracao impresso na etiqueta do sensor Elotod. No caso um sensor para 0.8 Apico
 #define PIN_A A0                    // Pino do conversor analogico/digital escolhido para medir a corrente. Pode ser modificado
-#define PRINT_VETOR 0               // "0"(zero) mostra o valor eficaz na serial e "1" mostra os dados na serial e a forma de onda na plotter
 
 float corrente[TOTAL_CICLOS];       // vetor com os dados instantaneos (N AMOSTRAS)da forma de onda da corrente
 float DELAY;                        // DELAY necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
