@@ -23,7 +23,7 @@ if (num == "1"):
 
     for i in range (0, AMOSTRAS):
         dado[i] = float(dado[i])
-    #print (dado)
+    print (dado)
 
     # Definicao de parametros
     n_ondas = 10 # escolhe o num. de ondas capturadas
@@ -35,7 +35,7 @@ if (num == "1"):
     # Tracado de graficos
     # Forma de onda
     plt.xlim(0.001, T) # define limites do eixo x
-    plt.ylim(-0.9, 0.9) # define limites do eixo y
+    plt.ylim(-1, 1) # define limites do eixo y
     plt.plot(t, dado, 'k-')
     plt.xlabel('T e m p o (s)')
     plt.ylabel('C O R R E N T E (A)')
@@ -51,7 +51,7 @@ if (num == "2"):
 
     for i in range (0, RMS_CICLOS):
         VALOR_SERIAL = ESP_32.readline()
-        #print (VALOR_SERIAL)
+        print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
     ESP_32.close()
@@ -73,12 +73,12 @@ if (num == "3"):
 
     for i in range (0, AMOSTRAS):
         VALOR_SERIAL = ESP_32.readline()
-        #print (VALOR_SERIAL)
+        print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
     ESP_32.close()
 
-    for i in range (0, 8):
+    for i in range (0, AMOSTRAS):
         dado[i] = float(dado[i])
     print (dado)
 

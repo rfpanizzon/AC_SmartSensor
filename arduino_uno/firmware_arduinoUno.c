@@ -2,7 +2,7 @@
 #define SERIAL_BAUDRATE 9600        // esta eh a taxa de transmissao de dados usual para Arduino
 #define AMOSTRAS 64                 // eh possivel varias este numero de amostras (N). Para Arduino UNO, o maximo eh 147
                                     // quando selecionar o numero de amostras, cuide para a variavel DELAY deve se manter positiva 
-#define TOTAL_CICLOS 320
+#define TOTAL_CICLOS 256
 
 #define FREQUENCIA 60               // Normalmente, eh 60 ou 50 Hz
 #define GANHO_SENSOR_CORRENTE 0.57  // este 0.57 é o valor de calibracao impresso na etiqueta do sensor Elotod. No caso um sensor para 0.8 Apico
@@ -16,8 +16,8 @@ String readString;
 
 #include <arduinoFFT.h>
 arduinoFFT FFT = arduinoFFT();
-double vReal[AMOSTRAS];
-double vImag[AMOSTRAS];
+double vReal[TOTAL_CICLOS];
+double vImag[TOTAL_CICLOS];
 
 void setup()
 {
