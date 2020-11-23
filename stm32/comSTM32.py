@@ -1,32 +1,34 @@
-import serial, csv, time
+import serial, csv, time, math
 from numpy import arange, fft, angle
 import matplotlib.pyplot as plt
 
-ESP_32 = serial.Serial("COM12", baudrate=115200)
-time.sleep(2) # wait for ESP_32
+STM32 = serial.Serial("COM12", baudrate=115200)
+time.sleep(2) # wait for STM32
 
 num = input("Digite o numero:\n 1. Forma de Onda \n 2. Valor RMS da corrente\n 3. FFT\n ")
 print("\n")
 if (num == "1"):
-    AMOSTRAS = 640 #10 CICLOS DE 64
+    AMOSTRAS = 512 #10 CICLOS DE 64
     dado = [ ]
 
-    ESP_32.write(num.encode())
-    time.sleep(2) # I shortened this to match the new value in your ESP_32 code
+    print("Opcao 1 selecionada. \n")
+
+    STM32.write(num.encode())
+    time.sleep(2) # I shortened this to match the new value in your STM32 code
 
     for i in range (0, AMOSTRAS):
-        VALOR_SERIAL = ESP_32.readline()
+        VALOR_SERIAL = STM32.readline()
         #print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
-    ESP_32.close()
+    STM32.close()
 
     for i in range (0, AMOSTRAS):
         dado[i] = float(dado[i])
     print (dado)
 
     # Definicao de parametros
-    n_ondas = 10 # escolhe o num. de ondas capturadas
+    n_ondas = 8 # escolhe o num. de ondas capturadas
     n = n_ondas*64 # sao 64 dados capturados para cada onda
     T = n_ondas*1.0/60 # perıodo em funcao do num. de ondas
     dt = T/n # intervalo entre cada medida
@@ -43,18 +45,20 @@ if (num == "1"):
     plt.show()
 
 if (num == "2"):
-    RMS_CICLOS = 10 #RECEBENDO O VALOR RMS DE CADA CICLO
+    print("Opcao 2 selecionada. \n")
+
+    RMS_CICLOS = 8 #RECEBENDO O VALOR RMS DE CADA CICLO
     dado = [ ]
 
-    ESP_32.write(num.encode())
-    time.sleep(2) # I shortened this to match the new value in your ESP_32 code
+    STM32.write(num.encode())
+    time.sleep(2) # I shortened this to match the new value in your STM32 code
 
     for i in range (0, RMS_CICLOS):
-        VALOR_SERIAL = ESP_32.readline()
+        VALOR_SERIAL = STM32.readline()
         print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
-    ESP_32.close()
+    STM32.close()
 
     for i in range (0, RMS_CICLOS):
         dado[i] = float(dado[i])
@@ -65,18 +69,21 @@ if (num == "2"):
     print ("\nMedia aritimetica: ", num)
 
 if (num == "3"):
-    AMOSTRAS = 8 #ateh a 8 armonica
+    print("Opcao 3 selecionada. \n")
+
+    AMOSTRAS = 1024 #ateh a 8 armonica
     dado = [ ]
+    amplitude = [ ]
     armonicas = [60, 120, 180, 240, 300, 360, 420, 540]
-    ESP_32.write(num.encode())
-    time.sleep(2) # I shortened this to match the new value in your ESP_32 code
+    STM32.write(num.encode())
+    time.sleep(2) # I shortened this to match the new value in your STM32 code
 
     for i in range (0, AMOSTRAS):
-        VALOR_SERIAL = ESP_32.readline()
-        print (VALOR_SERIAL)
+        VALOR_SERIAL = STM32.readline()
+        # print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
-    ESP_32.close()
+    STM32.close()
 
     for i in range (0, AMOSTRAS):
         dado[i] = float(dado[i])
@@ -84,11 +91,27 @@ if (num == "3"):
 
     # Tracado de graficos
 
+    for i in range (0, 8):
+      aux = 0
+      aux = math.sqrt((dado[i] * dado[i]) + (dado[i+1] * dado[i+1]))
+
+      aux2 = 2 * (aux/512)
+      amplitude.append(aux2)
+
+
+    print(amplitude)
+
+    # plt.ylabel("Amplitude")
+    # plt.xlabel("Frequência (Hz)")
+    # plt.bar(armonicas, amplitude, width=1.5)
+    # plt.show()
+
+
     plt.xlim(0, 600) # mostra as harmonicas de 0 a 1200Hz
-    plt.ylim(0, 200) # define limites eixo y (amplitudes)
-    plt.bar(armonicas, dado, width=3, align='edge', alpha=0.4, color='b', label='Frequencia')
+    plt.ylim(0, 1) # define limites eixo y (amplitudes)
+    plt.bar(armonicas, amplitude, width=3, align='edge', alpha=0.4, color='b', label='Frequencia')
     plt.xlabel('freq (Hz)')
-    plt.ylabel('|A(freq)|')
+    plt.ylabel('Amplitude')
     plt.show()
 
 
