@@ -37,7 +37,7 @@ if (num == "1"):
     # Tracado de graficos
     # Forma de onda
     plt.xlim(0.001, T) # define limites do eixo x
-    plt.ylim(0, 1000) # define limites do eixo y
+    plt.ylim(0, 1024) # define limites do eixo y
     plt.plot(t, dado, 'k-')
     plt.xlabel('T e m p o (s)')
     plt.ylabel('D A D O S (ADC)')
@@ -128,12 +128,13 @@ if (num == "4"):
     # print ("\nMedia aritimetica: ", num)    
 
 if (num == "5"):
-    print("Opcao 3 selecionada. \n")
+    print("Opcao 5 selecionada. \n")
 
     AMOSTRAS = 512 #ateh a 8 armonica
     dado = [ ]
+
     amplitude = [ ]
-    armonicas = [0, 60, 120, 180, 240, 300, 360, 420, 540]
+    armonicas = []
     STM32.write(num.encode())
     time.sleep(2) # I shortened this to match the new value in your STM32 code
 
@@ -148,17 +149,21 @@ if (num == "5"):
         dado[i] = float(dado[i])
     print (dado)
 
+    for i in range (0, 16, 2):
+        amplitude.append(dado[i+1])
+        armonicas.append(dado[i])
+
     # Tracado de graficos
 
-    for i in range (0, 18, 2):
-      aux = 0
-      aux = math.sqrt((dado[i] * dado[i]) + (dado[i+1] * dado[i+1]))
+    # for i in range (0, 18, 2):
+    #   aux = 0
+    #   aux = math.sqrt((dado[i] * dado[i]) + (dado[i+1] * dado[i+1]))
 
-      aux2 = 2 * (aux/512)
-      amplitude.append(aux2)
+    #   aux2 = 2 * (aux/512)
+    #   amplitude.append(aux2)
 
 
-    print(amplitude)
+    # print(amplitude)
 
     # plt.ylabel("Amplitude")
     # plt.xlabel("Frequência (Hz)")
