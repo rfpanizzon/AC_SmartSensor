@@ -96,7 +96,7 @@ void loop() {
   media_aritmetica_corrente /= TOTAL_CICLOS;
   //FIM CÁLCULO MÉDIA ARITMÉTICA
   
-  //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
+  //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA e deixar na escala
   for (int i = 0; i < TOTAL_CICLOS; i++)
   {
     vReal[i] -= media_aritmetica_corrente;
