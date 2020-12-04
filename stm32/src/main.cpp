@@ -9,12 +9,12 @@
 
 #define FREQUENCIA 60                   // Normalmente, eh 60 ou 50 Hz
 #define GANHO_SENSOR_CORRENTE 0.57      // este 0.57 é o valor de calibracao impresso na etiqueta do sensor Elotod. No caso um sensor para 0.8 Apico
-#define FS 512 * 60
+#define FS 5120 
 #define PIN_A PA0                       // Pino do conversor analogico/digital escolhido para medir a corrente. Pode ser modificado
 #define PIN_LED_INTERNO PC13            // Led interno do stm, definir como saida
 
 double corrente[TOTAL_CICLOS];        // Vetor com os dados instantaneos (N AMOSTRAS) da forma de onda da corrente
-float DELAY;                          // DELAY necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
+int DELAY = 195;                          // DELAY necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
 float TEMPO_CONVERSAO_N_AMOSTRAS;   
 float PERIODO = (1.0/FREQUENCIA);
 
@@ -31,33 +31,29 @@ double vImag[TOTAL_CICLOS];
 
 void PrintVector(double *vData, int bufferSize, uint8_t scaleType)
 {
-  for (int i = 0; i < bufferSize; i++)
+  for (uint16_t i = 0; i < bufferSize; i++)
   {
     double abscissa;
-    
     /* Print abscissa value */
     switch (scaleType)
     {
       case SCL_INDEX:
         abscissa = (i * 1.0);
-	      break;
+	break;
       case SCL_TIME:
         abscissa = ((i * 1.0) / FS);
-	      break;
+	break;
       case SCL_FREQUENCY:
         abscissa = ((i * 1.0 * FS) / TOTAL_CICLOS);
-	      break;
+	break;
     }
-
-    Serial.println(abscissa, 6);
-
-    // if(scaleType==SCL_FREQUENCY) 
-    //   Serial.print("Hz");
-
-    // Serial.print(" ");
+    Serial.print(abscissa, 6);
+    if(scaleType==SCL_FREQUENCY)
+      Serial.print("Hz");
+    Serial.print(" ");
     Serial.println(vData[i], 4);
-    }
-  //Serial.println();
+  }
+  Serial.println();
 }
 
 void setup() {
@@ -66,243 +62,67 @@ void setup() {
 
   Serial.begin(SERIAL_BAUDRATE);
   while(!Serial);
-  //delay(4000);
-  // Serial.println("Serial initt...");
-  // Serial.println("Set: ");
-  // Serial.print("\tN AMOSTRAS: "); Serial.println(AMOSTRAS);
-  // Serial.print("\tFrequencia do Sinal: "); Serial.print(FREQUENCIA); Serial.println(" Hz");
-  // Serial.print("\tPeriodo do Sinal: "); Serial.print(PERIODO,4);Serial.println(" segundos");
-
-  TEMPO_CONVERSAO_N_AMOSTRAS = micros();
-  for (int i = 0; i < AMOSTRAS; i++)      //Primeira conversao para calibração do AD e obter o tempo necessário para converter N AMOSTRAS
-  {
-    corrente[i] = analogRead(PIN_A);
-  }
-  TEMPO_CONVERSAO_N_AMOSTRAS = micros() - TEMPO_CONVERSAO_N_AMOSTRAS;
-  // O STM converte N amostras em um determinado tempo (milisegundos). Eh preciso fazer um DELAY para ter um N AMOSTRAS em um ciclo completo
-
-  // 1000000 eh para passar o PERIODO para microsegundos
-  // Observe que DELAY esta em microsegundos e que vc precisa cuidar para fazer N AMOSTRAS EM UM CICLO DE 60 OU 50Hz
-  DELAY = (((1000000*PERIODO) - TEMPO_CONVERSAO_N_AMOSTRAS) / AMOSTRAS);    
-
-  //DELAY nao pode ser negativo
-  // Serial.print("\tDELAY NAO PODE SER NEGATIVO =  "); Serial.print(DELAY, 4); Serial.println("  microsegundos para 64 amostras");
 }
 
 void loop() {
-   delay(5000); //O arduino framework para stm é meio bugado, precisa de delay para iniciar corretamente a serial
+  delay(4000); //delay pra n buga a serial
 
-  while (Serial.available())      // This will be skipped if no data present, leading to                                  
-  {                               // The code sitting in the delay function below
-    delay(30);                    // Delay to allow buffer to fill 
-    if (Serial.available() >0)
-    {
-      char c = Serial.read();     // Gets one byte from serial buffer
-      CMD_DESKTOP += c;           // Makes the string CMD_DESKTOP
-    }
-  }
-
-  if (CMD_DESKTOP == "1") //Forma de Onda Dados Brutos
+  //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
+  for (int i = 0; i < TOTAL_CICLOS; i++)
   {
-    //AQUISIÇÃO E ARMAZENAMENTO DE 8 CLICLOS = 512 AMOSTRAS DO SENSOR DE CORRENTE
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      corrente[i] = analogRead(PIN_A);
-      delayMicroseconds(DELAY);
-    }
-    //FIM DA AQUISIÇÃO
-
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      Serial.println(corrente[i]);
-    }
-
-    CMD_DESKTOP = "0";
+    vReal[i] = analogRead(PIN_A);
+    delayMicroseconds(DELAY);
   }
+  //FIM DA AQUISIÇÃO
 
-  if (CMD_DESKTOP == "2") //Forma de Onda Ajustada
+
+  // PARA VISUZALIZAR A FORMA DE ONDA NO PLOTTER SERIAL DEIXE SOMENTE O PRINT DESETE FOR
+  // for (int i = 0; i < TOTAL_CICLOS; i++) 
+  // {
+  //   Serial.println(vReal[i]);
+  // }
+
+  for (int i = 0; i < TOTAL_CICLOS; i++)
   {
-    //AQUISIÇÃO E ARMAZENAMENTO DE 8 CLICLOS = 512 AMOSTRAS DO SENSOR DE CORRENTE
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      corrente[i] = analogRead(PIN_A);
-      delayMicroseconds(DELAY);
-    }
-    //FIM DA AQUISIÇÃO
-    
-    //CALCULO MEDIA ARITMETICA
-    float media_aritmetica_corrente = 0;
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      media_aritmetica_corrente += corrente[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + corrente[i];
-    }
-    media_aritmetica_corrente /= TOTAL_CICLOS;
-    //FIM CALCULO MEDIA ARITMETICA
+    vImag[i] = 0.0;
+  }
         
-    //Serial.print(media_aritmetica_corrente);
-    
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
-      corrente[i] -= media_aritmetica_corrente;
-      //FIM REMOÇÃO DO NIVEL DC DA FORMA DE ONDA
-      
-      //PARA DEIXAR O GRAFICO NA ESCALA CORRETA
-      corrente[i] = corrente[i] * GANHO_SENSOR_CORRENTE * TOVOLTAGE;
-      Serial.println(corrente[i], 6);
-    }
-
-    CMD_DESKTOP = "0";
+  //CALCULO MEDIA ARITMETICA
+  float media_aritmetica_corrente = 0;
+  for (int i = 0; i < TOTAL_CICLOS; i++)
+  {
+    media_aritmetica_corrente += vReal[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + corrente[i];
   }
+  media_aritmetica_corrente /= TOTAL_CICLOS;
+  //FIM CÁLCULO MÉDIA ARITMÉTICA
   
-  if (CMD_DESKTOP == "3") //Valor RMS da corrente em cada ciclo
+  //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
+  for (int i = 0; i < TOTAL_CICLOS; i++)
   {
-    //AQUISIÇÃO E ARMAZENAMENTO DE 8 CLICLOS = 512 AMOSTRAS DO SENSOR DE CORRENTE
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      corrente[i] = analogRead(PIN_A);
-      delayMicroseconds(DELAY);
-    }
-    //FIM DA AQUISIÇÃO
-    
-    //CALCULO MEDIA ARITMETICA
-    double media_aritmetica_corrente = 0;
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      media_aritmetica_corrente += corrente[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + corrente[i];
-    }
-    media_aritmetica_corrente /= TOTAL_CICLOS;
-    //FIM CÁLCULO MÉDIA ARITMÉTICA
-    
-    //Serial.println(media_aritmetica_corrente);
-    
-    //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      corrente[i] -= media_aritmetica_corrente;
-    }
-    //FIM REMOÇÃO DO NIVEL DC DA FORMA DE ONDA
-    
-    //CALULO DO VALOR EFICAZ CORRENTE(RMS)
-    //valor_eficaz = sqrt(sum(amostra[i]^2) / numero de amostras)
-    
-    double soma_quadrados_corrente = 0;
-    int i = 0;
-    int aux = 0;
-
-    //calcula o valor da corrente rms para cada ciclo
-    for (int j = 0; j < 8; j++)
-    {
-      for (i; i < (aux + 64); i++)
-      {
-        soma_quadrados_corrente += corrente[i] * corrente[i];
-      }
-      double rms_corrente = sqrt(soma_quadrados_corrente / AMOSTRAS) * TOVOLTAGE;     // ajuste para ficar na escala de (0 a 5.0 ou a 3.3)Volts
-      Serial.println(rms_corrente * GANHO_SENSOR_CORRENTE, 6);
-      
-      aux = i;
-      soma_quadrados_corrente = 0;
-    }
-    
-    CMD_DESKTOP = "0";
+    vReal[i] -= media_aritmetica_corrente;
+    vReal[i] = vReal[i] * TOVOLTAGE * GANHO_SENSOR_CORRENTE;
   }
 
-  if (CMD_DESKTOP == "4") //Valor RMS de todos os ciclos
-  {
-    //AQUISIÇÃO E ARMAZENAMENTO DE 8 CLICLOS = 512 AMOSTRAS DO SENSOR DE CORRENTE
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      corrente[i] = analogRead(PIN_A);
-      delayMicroseconds(DELAY);
-    }
-    //FIM DA AQUISIÇÃO
-    
-    //CALCULO MEDIA ARITMETICA
-    double media_aritmetica_corrente = 0;
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      media_aritmetica_corrente += corrente[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + corrente[i];
-    }
-    media_aritmetica_corrente /= TOTAL_CICLOS;
-    //FIM CÁLCULO MÉDIA ARITMÉTICA
-    
-    //Serial.println(media_aritmetica_corrente);
-    
-    //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      corrente[i] -= media_aritmetica_corrente;
-    }
-    //FIM REMOÇÃO DO NIVEL DC DA FORMA DE ONDA
-    
-    //CALULO DO VALOR EFICAZ CORRENTE(RMS)
-    //valor_eficaz = sqrt(sum(amostra[i]^2) / numero de amostras)
-    
-    long double soma_quadrados_corrente = 0;
-
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      soma_quadrados_corrente += corrente[i] * corrente[i];
-    }
-    double rms_corrente = sqrt(soma_quadrados_corrente / TOTAL_CICLOS) * TOVOLTAGE;     // ajuste para ficar na escala de (0 a 5.0 ou a 3.3)Volts
-    Serial.println(rms_corrente * GANHO_SENSOR_CORRENTE, 6);
-  
-    CMD_DESKTOP = "0";
-  }
-
-  if (CMD_DESKTOP == "5")
-  {
-    //AQUISIÇÃO E ARMAZENAMENTO DE N AMOSTRAS DO SENSOR DE CORRENTE
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      vReal[i] = analogRead(PIN_A);
-      delayMicroseconds(DELAY);
-    }
-    //FIM DA AQUISIÇÃO
-
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      vImag[i] = 0.0;
-    }
-          
-    //CALCULO MEDIA ARITMETICA
-    float media_aritmetica_corrente = 0;
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      media_aritmetica_corrente += vReal[i];     //equivale a: media_aritmetica_corrente = media_aritmetica_corrente + corrente[i];
-    }
-    media_aritmetica_corrente /= TOTAL_CICLOS;
-    //FIM CÁLCULO MÉDIA ARITMÉTICA
-    
-    //REMOVER O NIVEL DC DA FORMA DE ONDA DA CORRENTE ELETRICA
-    for (int i = 0; i < TOTAL_CICLOS; i++)
-    {
-      vReal[i] -= media_aritmetica_corrente;
-      vReal[i] = vReal[i] * TOVOLTAGE * GANHO_SENSOR_CORRENTE;
-    }
-    //FIM REMOÇÃO DO NIVEL DC DA FORMA DE ONDA
-
-    //Serial.println("Data:");
-    //PrintVector(vReal, TOTAL_CICLOS, SCL_TIME);
-
-    FFT.Windowing(vReal, TOTAL_CICLOS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-    //Serial.println("Weighed data:");
-    // PrintVector(vReal, TOTAL_CICLOS, SCL_TIME);
-
-    FFT.Compute(vReal, vImag, TOTAL_CICLOS, FFT_FORWARD);
-    //Serial.println("Computed Real values:");
-    //PrintVector(vReal, TOTAL_CICLOS, SCL_INDEX);
-    // Serial.println("Computed Imaginary values:");
-    // PrintVector(vImag, TOTAL_CICLOS, SCL_INDEX);
-
-    FFT.ComplexToMagnitude(vReal, vImag, TOTAL_CICLOS);
-    PrintVector(vReal, (TOTAL_CICLOS >> 1), SCL_FREQUENCY);
-    // for (int i = 0; i < TOTAL_CICLOS; i++)
-    // {
-    //   Serial.println(vReal[i]);
-    // }
-    CMD_DESKTOP = "0";
+  //FIM REMOÇÃO DO NIVEL DC DA FORMA DE ONDA
 
 
-  }
+  //AQUI COMECA A FFT
+
+  //FFT.Windowing(vReal, TOTAL_CICLOS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+  // Serial.println("Weighed data:");
+  //PrintVector(vReal, TOTAL_CICLOS, SCL_TIME);
+
+  FFT.Compute(vReal, vImag, TOTAL_CICLOS, FFT_FORWARD);
+  //Serial.println("Computed Real values:");
+  //PrintVector(vReal, TOTAL_CICLOS, SCL_INDEX);
+  // Serial.println("Computed Imaginary values:");
+  // PrintVector(vImag, TOTAL_CICLOS, SCL_INDEX);
+
+  FFT.ComplexToMagnitude(vReal, vImag, TOTAL_CICLOS);
+  PrintVector(vReal, (TOTAL_CICLOS >> 1), SCL_FREQUENCY);
+
+  double x = FFT.MajorPeak(vReal, TOTAL_CICLOS, FS); //retorna a freq com maior pico
+  Serial.println(x, 6);
+
+  while(1);
 }
