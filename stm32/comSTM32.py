@@ -76,7 +76,7 @@ if (num == "2"):
     plt.xlim(0.001, T) # define limites do eixo x
     plt.ylim(-0.7,0.7) # define limites do eixo y
     plt.plot(t, dado, 'k-')
-    plt.xlabel('T e m p o (s)')
+    plt.xlabel('T e m p o (ms)')
     plt.ylabel('C O R R E N T E (A)')
     plt.grid()
     plt.show()
@@ -84,7 +84,7 @@ if (num == "2"):
 if (num == "3"):
     print("Opcao 3 selecionada. \n")
 
-    RMS_CICLOS = 8 #RECEBENDO O VALOR RMS DE CADA CICLO
+    RMS_CICLOS = 16 #RECEBENDO O VALOR RMS DE CADA CICLO
     dado = [ ]
 
     STM32.write(num.encode())
@@ -140,7 +140,7 @@ if (num == "5"):
 
     for i in range (0, AMOSTRAS):
         VALOR_SERIAL = STM32.readline()
-        # print (VALOR_SERIAL)
+        #print (VALOR_SERIAL)
         dado.append(VALOR_SERIAL)
 
     STM32.close()
@@ -149,7 +149,7 @@ if (num == "5"):
         dado[i] = float(dado[i])
     print (dado)
 
-    for i in range (0, 16, 2):
+    for i in range (0, 128, 2):
         amplitude.append(dado[i+1])
         armonicas.append(dado[i])
 
@@ -171,8 +171,8 @@ if (num == "5"):
     # plt.show()
 
 
-    plt.xlim(0, 600) # mostra as harmonicas de 0 a 1200Hz
-    plt.ylim(0, 1) # define limites eixo y (amplitudes)
+    plt.xlim(0, 480) # mostra as harmonicas de 0 a 1200Hz
+    plt.ylim(0, 5) # define limites eixo y (amplitudes)
     plt.bar(armonicas, amplitude, width=3, align='edge', alpha=0.4, color='b', label='Frequencia')
     plt.xlabel('freq (Hz)')
     plt.ylabel('Amplitude')
