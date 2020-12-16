@@ -5,7 +5,7 @@
 #define SERIAL_BAUDRATE 115200          // Esta eh a taxa de transmissao de dados usual para STM32 BLUEPILL
 #define AMOSTRAS 64                     // Eh possivel varias este numero de amostras (N).
 
-#define TOTAL_AMOSTRAS 512             // 16 ciclos com 64 amostras
+#define TOTAL_AMOSTRAS 512             // 8 ciclos com 64 amostras
 
 #define FREQUENCIA 60                   // Normalmente, eh 60 ou 50 Hz
 #define GANHO_SENSOR_CORRENTE 0.57      // este 0.57 é o valor de calibracao impresso na etiqueta do sensor Elotod. No caso um sensor para 0.8 Apico
@@ -13,7 +13,7 @@
 #define PIN_A PA0                       // Pino do conversor analogico/digital escolhido para medir a vReal. Pode ser modificado
 #define PIN_LED_INTERNO PC13            // Led interno do stm, definir como saida
 
-unsigned long DELAY = 192;              // DELAY em us necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
+unsigned long DELAY = 195;              // DELAY em us necessario para ajustar o tempo do loop de aquisicao e fazer N AMOSTRAS em um ciclo de 50Hz ou 60Hz
 unsigned long TEMPO_CONVERSAO_N_AMOSTRAS;   
 
 String CMD_DESKTOP;                     // String que recebe os comando do desktop
@@ -78,7 +78,7 @@ void PrintVector(double *vData, int bufferSize, uint8_t scaleType)
         abscissa = ((i * 1.0) / FS);
 	      break;
       case SCL_FREQUENCY:
-        abscissa = ((i * 1.0 * FS) / TOTAL_AMOSTRAS);
+        abscissa = ((i * 1.0 * FS) / AMOSTRAS);
 	      break;
     }
 
@@ -98,11 +98,12 @@ void setup() {
   pinMode(PIN_A, INPUT);
 
   Serial.begin(SERIAL_BAUDRATE);
+  analogReadResolution(12);
   while(!Serial);
 }
 
 void loop() {
-   delay(5000); //O arduino framework para stm é meio bugado, precisa de delay para iniciar corretamente a serial
+ delay(5000); //O arduino framework para stm é meio bugado, precisa de delay para iniciar corretamente a serial
 
   while (Serial.available())      // This will be skipped if no data present, leading to                                  
   {                               // The code sitting in the delay function below
@@ -226,22 +227,22 @@ void loop() {
   {
     LerAmostras();
 
-    for (int i = 0; i < TOTAL_AMOSTRAS; i++)
+    for (int i = 0; i < AMOSTRAS; i++)
     {
       vImag[i] = 0.0;
     }
           
     //CALCULO MEDIA ARITMETICA
     float media_aritmetica_vReal = 0;
-    for (int i = 0; i < TOTAL_AMOSTRAS; i++)
+    for (int i = 0; i < AMOSTRAS; i++)
     {
       media_aritmetica_vReal += vReal[i];     //equivale a: media_aritmetica_vReal = media_aritmetica_vReal + vReal[i];
     }
-    media_aritmetica_vReal /= TOTAL_AMOSTRAS;
+    media_aritmetica_vReal /= AMOSTRAS;
     //FIM CÁLCULO MÉDIA ARITMÉTICA
     
     //REMOVER O NIVEL DC DA FORMA DE ONDA DA vReal ELETRICA
-    for (int i = 0; i < TOTAL_AMOSTRAS; i++)
+    for (int i = 0; i < AMOSTRAS; i++)
     {
       vReal[i] -= media_aritmetica_vReal;
       vReal[i] = vReal[i] * TOVOLTAGE * GANHO_SENSOR_CORRENTE;
@@ -251,21 +252,19 @@ void loop() {
     //Serial.println("Data:");
     //PrintVector(vReal, TOTAL_AMOSTRAS, SCL_TIME);
 
-    FFT.Windowing(vReal, TOTAL_AMOSTRAS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+    FFT.Windowing(vReal, AMOSTRAS, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
     //Serial.println("Weighed data:");
     // PrintVector(vReal, TOTAL_AMOSTRAS, SCL_TIME);
 
-    FFT.Compute(vReal, vImag, TOTAL_AMOSTRAS, FFT_FORWARD);
+    FFT.Compute(vReal, vImag, AMOSTRAS, FFT_FORWARD);
     //Serial.println("Computed Real values:");
     //PrintVector(vReal, TOTAL_AMOSTRAS, SCL_INDEX);
     // Serial.println("Computed Imaginary values:");
     // PrintVector(vImag, TOTAL_AMOSTRAS, SCL_INDEX);
 
-    FFT.ComplexToMagnitude(vReal, vImag, TOTAL_AMOSTRAS);
-    PrintVector(vReal, (TOTAL_AMOSTRAS >> 1), SCL_FREQUENCY);
+    FFT.ComplexToMagnitude(vReal, vImag, AMOSTRAS);
+    PrintVector(vReal, (AMOSTRAS >> 1), SCL_FREQUENCY);
 
     CMD_DESKTOP = "0";
-
-
   }
 }

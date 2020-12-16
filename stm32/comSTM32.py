@@ -30,16 +30,16 @@ if (num == "1"):
     # Definicao de parametros
     n_ondas = 8 # escolhe o num. de ondas capturadas
     n = n_ondas*64 # sao 64 dados capturados para cada onda
-    T = n_ondas*1.0/60 # perıodo em funcao do num. de ondas
+    T = n_ondas*1000.0/60 # perıodo em funcao do num. de ondas
     dt = T/n # intervalo entre cada medida
     t = dt*arange(0, n) # gera vetor com os instantes de tempo
 
     # Tracado de graficos
     # Forma de onda
     plt.xlim(0.001, T) # define limites do eixo x
-    plt.ylim(0, 1024) # define limites do eixo y
+    plt.ylim(0, 4095) # define limites do eixo y
     plt.plot(t, dado, 'k-')
-    plt.xlabel('T e m p o (s)')
+    plt.xlabel('T e m p o (ms)')
     plt.ylabel('D A D O S (ADC)')
     plt.grid()
     plt.show()
@@ -67,14 +67,14 @@ if (num == "2"):
     # Definicao de parametros
     n_ondas = 8 # escolhe o num. de ondas capturadas
     n = n_ondas*64 # sao 64 dados capturados para cada onda
-    T = n_ondas*1.0/60 # perıodo em funcao do num. de ondas
+    T = n_ondas*1000.0/60 # perıodo em funcao do num. de ondas
     dt = T/n # intervalo entre cada medida
     t = dt*arange(0, n) # gera vetor com os instantes de tempo
 
     # Tracado de graficos
     # Forma de onda
     plt.xlim(0.001, T) # define limites do eixo x
-    plt.ylim(-0.7,0.7) # define limites do eixo y
+    plt.ylim(-0.8,0.8) # define limites do eixo y
     plt.plot(t, dado, 'k-')
     plt.xlabel('T e m p o (ms)')
     plt.ylabel('C O R R E N T E (A)')
@@ -84,7 +84,7 @@ if (num == "2"):
 if (num == "3"):
     print("Opcao 3 selecionada. \n")
 
-    RMS_CICLOS = 16 #RECEBENDO O VALOR RMS DE CADA CICLO
+    RMS_CICLOS = 8 #RECEBENDO O VALOR RMS DE CADA CICLO
     dado = [ ]
 
     STM32.write(num.encode())
@@ -101,9 +101,6 @@ if (num == "3"):
         dado[i] = float(dado[i])
     
     print ("Valor da corrente RMS em cada ciclo: ", dado)
-    # media = (sum(dado) / float(len(dado)))
-    # num = round(media, 4)
-    # print ("\nMedia aritimetica: ", num)
 
 if (num == "4"):
     print("Opcao 4 selecionada. \n")
@@ -123,19 +120,17 @@ if (num == "4"):
     dado = float(dado)
     
     print ("Valor da corrente RMS todos os ciclos: ", dado)
-    # media = (sum(dado) / float(len(dado)))
-    # num = round(media, 4)
-    # print ("\nMedia aritimetica: ", num)    
 
 if (num == "5"):
     print("Opcao 5 selecionada. \n")
 
-    AMOSTRAS = 512 #ateh a 8 armonica
+    AMOSTRAS = 64 #ateh a 8 armonica
     dado = [ ]
 
     amplitude = [ ]
     armonicas = []
     STM32.write(num.encode())
+    
     time.sleep(2) # I shortened this to match the new value in your STM32 code
 
     for i in range (0, AMOSTRAS):
@@ -149,49 +144,17 @@ if (num == "5"):
         dado[i] = float(dado[i])
     print (dado)
 
-    for i in range (0, 128, 2):
+    for i in range (0, 36, 2):
         amplitude.append(dado[i+1])
         armonicas.append(dado[i])
 
     # Tracado de graficos
 
-    # for i in range (0, 18, 2):
-    #   aux = 0
-    #   aux = math.sqrt((dado[i] * dado[i]) + (dado[i+1] * dado[i+1]))
-
-    #   aux2 = 2 * (aux/512)
-    #   amplitude.append(aux2)
-
-
-    # print(amplitude)
-
-    # plt.ylabel("Amplitude")
-    # plt.xlabel("Frequência (Hz)")
-    # plt.bar(armonicas, amplitude, width=1.5)
-    # plt.show()
-
-
-    plt.xlim(0, 480) # mostra as harmonicas de 0 a 1200Hz
-    plt.ylim(0, 5) # define limites eixo y (amplitudes)
-    plt.bar(armonicas, amplitude, width=3, align='edge', alpha=0.4, color='b', label='Frequencia')
+    plt.xlim(0, 540) # mostra as harmonicas de 0 a 1200Hz
+    plt.ylim(0, 3.5) # define limites eixo y (amplitudes)
+    plt.bar(armonicas, amplitude, width=10, align='edge', alpha=0.4, color='b', label='Frequencia')
     plt.xlabel('freq (Hz)')
     plt.ylabel('Amplitude')
     plt.show()
-
-
-
-
-# # C´alculo da transformada de Fourier
-# Fk = fft.fft(dado)/(n) # coeficientes de Fourier normalizados
-# nu = fft.fftfreq(n,dt) # frequencias naturais
-# delta = angle(Fk) # ˆangulo de fase de cada componente
-
-
-# ARQUIVO = open('dado.csv', "wb")
-# writer = csv.writer(ARQUIVO, delimiter='\t', quotechar='"',
-# quoting=csv.QUOTE_ALL)
-# for i in range (0, AMOSTRAS):
-#     writer.writerow([dado[i], nu[i], abs(Fk[i]), delta[i]])
-# ARQUIVO.close()
 
 
